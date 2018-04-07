@@ -1,0 +1,60 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'bundler/setup'
+
+config_path = "#{Dir.home}/.learn-clean"
+
+if File.exist?(config_path)
+  token = File.read(config_path)
+else
+  puts "Please enter your github token"
+  token = gets.chomp
+  File.open(config_path, "w+") do |file|
+    file.write token
+  end
+end
+
+puts "initializing GitHub client"
+client = Octokit::Client.new(access_token: token)
+client.auto_paginate = true
+user = client.user
+
+puts "Would you like to"
+puts "1) purge SSH keys"
+puts "2) GitHub repos?"
+
+choice = gets.chomp
+case choice.to_i
+when 1
+  puts "Purging ssh keys from the Learn IDE"
+    keys = client.keys
+    keys_to_delete = keys.select{|k| k.title == "Learn IDE"}.map{|k| k.id}
+    keys_to_delete.each do |key_id|
+      client.remove_key(key_id)
+    end
+  puts "Done"
+when 2
+  puts "Cool, which batch iteration?"
+  batch_iteration = gets.chomp
+  puts "Attempting to purge forked repos for #{batch_iteration}"
+  repos = client.repositories(user=user.login, since: "2018-01-01")
+  repos_to_delete = repos.select{|repo| repo.full_name.end_with?(batch_iteration) && repo.fork}.map{|repo| repo.full_name}
+  puts "Please confirm you want to delete the following repos: Y/n"
+  puts "#{repos_to_delete.join(", ")}"
+  confirm = gets.chomp.downcase
+  if confirm == "y"
+    repos_to_delete.each do |repo_name|
+      client.delete_repository(repo_name)
+    end
+  else
+    puts "Cool, not deleting anything."
+  end
+
+  puts "Done"
+else
+  puts "Invalid response. Try running the script again"
+end
+
+
+
