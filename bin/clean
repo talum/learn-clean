@@ -9,7 +9,7 @@ if File.exist?(config_path)
   token = File.read(config_path)
 else
   puts "Please enter your github token"
-  token = gets.chomp
+  token = gets.strip
   File.open(config_path, "w+") do |file|
     file.write token
   end
@@ -22,9 +22,10 @@ user = client.user
 
 puts "Would you like to"
 puts "1) purge SSH keys"
-puts "2) GitHub repos?"
+puts "2) GitHub repos"
+puts "3) Delete repo by name?"
 
-choice = gets.chomp
+choice = gets.strip
 case choice.to_i
 when 1
   puts "Purging ssh keys from the Learn IDE"
@@ -36,13 +37,13 @@ when 1
   puts "Done"
 when 2
   puts "Cool, which batch iteration?"
-  batch_iteration = gets.chomp
+  batch_iteration = gets.strip
   puts "Attempting to purge forked repos for #{batch_iteration}"
   repos = client.repositories(user=user.login, since: "2018-01-01")
   repos_to_delete = repos.select{|repo| repo.full_name.end_with?(batch_iteration) && repo.fork}.map{|repo| repo.full_name}
   puts "Please confirm you want to delete the following repos: Y/n"
   puts "#{repos_to_delete.join(", ")}"
-  confirm = gets.chomp.downcase
+  confirm = gets.strip.downcase
   if confirm == "y"
     repos_to_delete.each do |repo_name|
       client.delete_repository(repo_name)
@@ -52,6 +53,28 @@ when 2
   end
 
   puts "Done"
+when 3
+  done = false
+
+  until done
+    puts "Enter the repo name"
+    repo_name = gets.strip
+    begin
+      if client.delete_repository("#{user.login}/#{repo_name}")
+        puts "Deleted #{repo_name}"
+      else
+        puts "Unable to delete #{repo_name}"
+      end
+    rescue Octokit::InvalidRepository => e
+      puts e.message
+    end
+
+    puts "Do you have another repo to delete? (Y/n)"
+    resp = gets.strip.downcase
+    if resp == "n"
+      done = true
+    end
+  end
 else
   puts "Invalid response. Try running the script again"
 end
