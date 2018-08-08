@@ -1,2 +1,4 @@
-require 'octokit'
-require 'pry'
+source 'https://rubygems.org'
+
+gem 'octokit'
+gem 'pry'
