@@ -2,6 +2,7 @@
 
 require 'rubygems'
 require 'bundler/setup'
+Bundler.require
 
 config_path = "#{Dir.home}/.learn-clean"
 
@@ -31,7 +32,9 @@ when 1
   puts "Purging ssh keys from the Learn IDE"
     keys = client.keys
     keys_to_delete = keys.select{|k| k.title == "Learn IDE"}.map{|k| k.id}
+    puts "Found #{keys_to_delete.count} keys with the labeled Learn IDE"
     keys_to_delete.each do |key_id|
+      puts "Deleting Key: ID #{key_id}"
       client.remove_key(key_id)
     end
   puts "Done"
